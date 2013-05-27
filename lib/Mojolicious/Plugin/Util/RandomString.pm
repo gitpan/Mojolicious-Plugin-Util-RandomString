@@ -1,13 +1,11 @@
 package Mojolicious::Plugin::Util::RandomString;
 use Mojo::Base 'Mojolicious::Plugin';
-use Mojo::IOLoop;
 use Session::Token;
 
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 
 my (%generator, %default, %setting);
 my $read_config;
-
 
 # Register plugin
 sub register {
@@ -69,9 +67,10 @@ sub register {
   $mojo->helper(
     random_string => sub {
 
+      my $gen = $_[1];
+
       # Start Loop unless it is running
       Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
-      my $gen = $_[1];
 
       # Generate from generator
       unless ($_[2]) {
@@ -104,7 +103,7 @@ sub register {
       $mojo->log->warn(qq!RandomString generator "$gen" is unknown!);
       return '';
     }
-  );
+  ) unless exists $mojo->renderer->helpers->{random_string};
 };
 
 
@@ -152,7 +151,7 @@ L<Mojolicious::Plugin::Util::RandomString> is a plugin to generate
 random strings for session tokens, encryption salt, temporary
 password generation etc. Internally it uses L<Session::Token>
 (see L<this comparison|http://neilb.org/reviews/passwords.html#Session::Token>
-for reasons of this decision).
+for reasons for this decision).
 
 This plugin will automatically reseed the random number generator in
 a forking environment like Hypnotoad (although it is untested in other
@@ -179,7 +178,7 @@ L<Mojolicious::Plugin> and implements the following new one.
     }
   };
 
-  Or in your config file
+  # Or in your config file
   {
     'Util-RandomString' => {
       entropy => 256,
