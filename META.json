@@ -4,7 +4,7 @@
       "Nils Diewald"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.64, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "ExtUtils::MakeMaker version 6.82, CPAN::Meta::Converter version 2.120351",
    "license" : [
       "perl_5"
    ],
@@ -47,5 +47,5 @@
          "url" : "https://github.com/Akron/Mojolicious-Plugin-Util-RandomString"
       }
    },
-   "version" : "0.02"
+   "version" : "0.03"
 }
