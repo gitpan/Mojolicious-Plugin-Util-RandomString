@@ -2,17 +2,18 @@ package Mojolicious::Plugin::Util::RandomString;
 use Mojo::Base 'Mojolicious::Plugin';
 use Session::Token;
 
-our $VERSION = '0.03_2';
+our $VERSION = '0.03_3';
 
-my (%generator, %setting, %default);
-my ($read_config, $ok);
+our (%generator, %setting, %default);
+our $read_config;
+our $ok;
 
 # Register plugin
 sub register {
   my ($plugin, $mojo, $param) = @_;
 
-  $ok = undef;
   $param //= {};
+  $ok = 0;
 
   if (ref $param ne 'HASH') {
     $mojo->log->fatal(__PACKAGE__ . ' expects a hash reference');
@@ -67,7 +68,6 @@ sub register {
       # Create default generator
       unless (exists $generator{default}) {
 	$generator{default} = Session::Token->new( %default );
-
 	# warn $$ . ' ' . $plugin . ' Init S::T with {' . join(', ', map { $_ . ' => ' . (ref $default{$_} ? '[' . join(',', @{$default{$_}}) . ']' : $default{$_})} keys %default) . '}';
       };
     });
@@ -120,7 +120,7 @@ sub register {
       $mojo->log->warn(qq!RandomString generator "$gen" is unknown!);
       return '';
     }
-  ); # unless exists $mojo->renderer->helpers->{random_string};
+  ) unless exists $mojo->renderer->helpers->{random_string};
 };
 
 
