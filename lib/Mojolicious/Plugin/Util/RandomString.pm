@@ -2,7 +2,7 @@ package Mojolicious::Plugin::Util::RandomString;
 use Mojo::Base 'Mojolicious::Plugin';
 use Session::Token;
 
-our $VERSION = '0.03_4';
+our $VERSION = '0.03_5';
 
 our (%generator, %setting, %default);
 our $read_config;
@@ -68,7 +68,7 @@ sub register {
       # Create default generator
       unless (exists $generator{default}) {
 	$generator{default} = Session::Token->new( %default );
-#	warn $$ . ' ' . $plugin . ' Init S::T with {' . join(', ', map { $_ . ' => ' . (ref $default{$_} ? '[' . join(',', @{$default{$_}}) . ']' : $default{$_})} keys %default) . '}';
+	warn $$ . ' ' . $plugin . ' Init S::T with {' . join(', ', map { $_ . ' => ' . (ref $default{$_} ? '[' . join(',', @{$default{$_}}) . ']' : $default{$_})} keys %default) . '}';
       };
     });
 
@@ -83,14 +83,18 @@ sub register {
   # Establish 'random_string' helper
   $mojo->helper(
     random_string => sub {
+      my $c = shift;
+      my $gen = $_[0];
 
       # One tick for loop until the plugin is registered
-      Mojo::IOLoop->one_tick until Mojo::IOLoop->is_running || ($ok > 0);
+      until (Mojo::IOLoop->is_running || ($ok > 0)) {
+	warn 'TICK';
+	Mojo::IOLoop->one_tick;
+      };
 
-      my $gen = $_[1];
 
       # Generate from generator
-      unless ($_[2]) {
+      unless ($_[1]) {
 
 	# Generator doesn't exist
 	if ($gen && !exists $generator{$gen}) {
@@ -98,12 +102,14 @@ sub register {
 	  return '';
 	};
 
+	warn 'GEN WAS ' . ($gen ? 'SET' : 'DEFAULT') . ': ' . $c->_dump_random_string;
+
 	# Get from generator
 	return $generator{$gen // 'default'}->get;
       };
 
       # Controller
-      shift;
+      # shift;
 
       # Overwrite default configuration
       return Session::Token->new(%default, @_)->get unless @_ % 2;
