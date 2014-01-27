@@ -2,9 +2,9 @@ package Mojolicious::Plugin::Util::RandomString;
 use Mojo::Base 'Mojolicious::Plugin';
 use Session::Token;
 
-our $VERSION = '0.03_5';
+our $VERSION = '0.03_6';
 
-our (%generator, %setting, %default);
+our (%generator, %setting, %default, %param);
 our $read_config;
 our $ok = 1;
 
@@ -12,7 +12,6 @@ our $ok = 1;
 sub register {
   my ($plugin, $mojo, $param) = @_;
 
-  $param //= {};
   $ok--;
 
   if (ref $param ne 'HASH') {
@@ -20,11 +19,14 @@ sub register {
     return;
   };
 
+  if ($param) {
+    $param{$_} = $param->{$_} foreach keys %$param;
+  };
 
   # Load parameter from Config file
   unless ($read_config) {
     if (my $config_param = $mojo->config('Util-RandomString')) {
-      $param = { %$config_param, %$param };
+      %param =  ( %$config_param, %param );
     };
     $read_config = 1;
   };
@@ -36,29 +38,29 @@ sub register {
       my %created = ();
 
       # Create generators by param
-      foreach (keys %$param) {
+      foreach (keys %param) {
 
 	# Named generator
-	if (ref $param->{$_} && ref $param->{$_} eq 'HASH') {
+	if (ref $param{$_} && ref $param{$_} eq 'HASH') {
 
 	  next if $created{$_};
 
 	  # Construct object
 	  unless ($generator{$_} = Session::Token->new(
-	    %{ $param->{$_} }
+	    %{ $param{$_} }
 	  )) {
 
 	    # Unable to construct object
 	    $mojo->log->fatal(qq!Unable to create generator for "$_"!);
 	    next;
 	  };
-	  $setting{$_} = { %{ $param->{$_} } };
+	  $setting{$_} = { %{$param{$_}} };
 	  $created{$_} = 1;
 	}
 
 	# Default parameter
 	else {
-	  $default{$_} = $param->{$_};
+	  $default{$_} = $param{$_};
 	};
       };
 
@@ -68,7 +70,7 @@ sub register {
       # Create default generator
       unless (exists $generator{default}) {
 	$generator{default} = Session::Token->new( %default );
-	warn $$ . ' ' . $plugin . ' Init S::T with {' . join(', ', map { $_ . ' => ' . (ref $default{$_} ? '[' . join(',', @{$default{$_}}) . ']' : $default{$_})} keys %default) . '}';
+	warn 'Init S::T with {' . join(', ', map { $_ . ' => ' . (ref $default{$_} ? '[' . join(',', @{$default{$_}}) . ']' : $default{$_})} keys %default) . '} (' . $$ . ' ' . $plugin . ')';
       };
     });
 
@@ -102,10 +104,10 @@ sub register {
 	  return '';
 	};
 
-	warn 'GEN WAS ' . ($gen ? 'SET' : 'DEFAULT') . ': ' . $c->_dump_random_string;
+	warn 'GEN WAS ' . ($gen ? 'SET' : 'DEFAULT') . ': ' . $c->_dump_random_string . '(Example: ' . $generator{'default'}->get . ')';
 
 	# Get from generator
-	return $generator{$gen // 'default'}->get;
+	return $generator{$gen || 'default'}->get;
       };
 
       # Controller
