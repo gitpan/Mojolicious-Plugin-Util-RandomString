@@ -2,7 +2,7 @@ package Mojolicious::Plugin::Util::RandomString;
 use Mojo::Base 'Mojolicious::Plugin';
 use Session::Token;
 
-our $VERSION = '0.03_6';
+our $VERSION = '0.04';
 
 our (%generator, %setting, %default, %param);
 our $read_config;
@@ -22,6 +22,7 @@ sub register {
   if ($param) {
     $param{$_} = $param->{$_} foreach keys %$param;
   };
+
 
   # Load parameter from Config file
   unless ($read_config) {
@@ -70,30 +71,18 @@ sub register {
       # Create default generator
       unless (exists $generator{default}) {
 	$generator{default} = Session::Token->new( %default );
-	warn 'Init S::T with {' . join(', ', map { $_ . ' => ' . (ref $default{$_} ? '[' . join(',', @{$default{$_}}) . ']' : $default{$_})} keys %default) . '} (' . $$ . ' ' . $plugin . ')';
       };
     });
 
 
-  # Temporary
-  $mojo->helper(
-    _dump_random_string => sub {
-      return $$ . ' ' . $plugin . '{' . join(', ', map { $_ . ' => ' . (ref $default{$_} ? '[' . join(',', @{$default{$_}}) . ']' : $default{$_})} keys %default) . '}'
-    }
-  );
-
   # Establish 'random_string' helper
   $mojo->helper(
     random_string => sub {
-      my $c = shift;
+      shift;
       my $gen = $_[0];
 
       # One tick for loop until the plugin is registered
-      until (Mojo::IOLoop->is_running || ($ok > 0)) {
-	warn 'TICK';
-	Mojo::IOLoop->one_tick;
-      };
-
+      Mojo::IOLoop->one_tick until Mojo::IOLoop->is_running || $ok > 0;
 
       # Generate from generator
       unless ($_[1]) {
@@ -104,14 +93,9 @@ sub register {
 	  return '';
 	};
 
-	warn 'GEN WAS ' . ($gen ? 'SET' : 'DEFAULT') . ': ' . $c->_dump_random_string . '(Example: ' . $generator{'default'}->get . ')';
-
 	# Get from generator
 	return $generator{$gen || 'default'}->get;
       };
-
-      # Controller
-      # shift;
 
       # Overwrite default configuration
       return Session::Token->new(%default, @_)->get unless @_ % 2;

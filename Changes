@@ -1,5 +1,5 @@
-0.03_6 2014-01-27
-        - Test problems with multithreading.
+0.04 2014-01-28
+        - Finally fixed IOLoop-bug.
 
 0.03 2014-01-25
         - Improved test suite.
